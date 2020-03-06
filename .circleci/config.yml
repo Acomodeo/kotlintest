@@ -1,0 +1,32 @@
+version: 2.1
+
+orbs:
+    maven: acomodeo/maven@2.0.0
+
+workflows:
+    version: 2.1
+    test-and-deploy:
+        jobs:
+            - maven/checkout_code
+            - maven/lint:
+                 requires:
+                     - maven/checkout_code
+            - maven/build:
+                  requires:
+                      - maven/checkout_code
+            - maven/test:
+                  coverage_report: true
+                  requires:
+                      - maven/build
+            - maven/deploy:
+                  webhook_url: https://builder.acomodeo.com/hooks/jar-to-docker
+                  maven_registry_domain: storage-bin.acomodeo.build
+                  requires:
+                      - maven/build
+                      - maven/test
+                      - maven/lint
+            - maven/report-coverage:
+                  prometheus_gateway_url: https://prometheus-pushgateway.acomodeo.build/metrics/job/test-coverage
+                  requires:
+                      - maven/test
+
